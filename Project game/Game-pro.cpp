@@ -6,10 +6,10 @@
 
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
-const float FISH_RADIUS = 5.0f;
+const float FISH_RADIUS = 1.0f;
 const float FISH_SPEED = 2.5f;
-const float BUBBLE_RADIUS = 15.0f;
-const float BUBBLE_SPEED = 0.2f; // Reduced bubble speed
+const float BUBBLE_RADIUS = 20.0f;
+const float BUBBLE_SPEED = 5.0f; // Reduced bubble speed
 const float FOOD_RADIUS = 10.0f;
 const int MAX_FOOD_COUNT = 10; // Maximum number of food bubbles on the screen
 
@@ -43,7 +43,7 @@ private:
     float getRandomVelocity() const {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.3f);
+        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.5f);
         return randomVelocity(gen);
     }
 };
@@ -78,7 +78,7 @@ private:
     float getRandomVelocity() const {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.3f);
+        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.4f);
         return randomVelocity(gen);
     }
 };
@@ -87,19 +87,25 @@ class Game {
 public:
     Game()
         : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Bubble Dodge Game"),
-        fishTexture(), bubbleClock(), score(0)
+        fishTexture(), bubbleClock(), score(0), isPlaying(false)
     {
         initializeTextures();
         initializeSprites();
         initializeRandomGenerators();
         initializeScoreText();
+        initializePlayButton();
     }
 
     void run() {
         while (window.isOpen()) {
             processEvents();
-            update();
-            render();
+            if (isPlaying) {
+                update();
+                render();
+            }
+            else {
+                renderPlayButton();
+            }
         }
     }
 
@@ -146,11 +152,37 @@ private:
         scoreText.setPosition(10, 10);
     }
 
+    void initializePlayButton() {
+        playButton.setSize(sf::Vector2f(200, 50));
+        playButton.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 50); // Adjust vertical position
+
+        playButton.setFillColor(sf::Color::Green);
+
+        playButtonText.setFont(font);
+        playButtonText.setCharacterSize(32); // Increase the font size to 32
+        playButtonText.setFillColor(sf::Color::White);
+        playButtonText.setString("Play");
+        playButtonText.setPosition(
+            playButton.getPosition().x + (playButton.getSize().x - playButtonText.getLocalBounds().width) / 2,
+            playButton.getPosition().y + (playButton.getSize().y - playButtonText.getLocalBounds().height) / 2 - 5
+        );
+
+        playButtonText.setStyle(sf::Text::Bold);
+    }
+
+
+
     void processEvents() {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
                 window.close();
+            }
+            else if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    handleMouseClick(event.mouseButton.x, event.mouseButton.y);
+                }
+            }
         }
 
         sf::Vector2f movement(0.0f, 0.0f);
@@ -174,6 +206,12 @@ private:
         fishPosition.x = std::max(FISH_RADIUS, std::min(fishPosition.x, static_cast<float>(WINDOW_WIDTH) - FISH_RADIUS));
         fishPosition.y = std::max(FISH_RADIUS, std::min(fishPosition.y, static_cast<float>(WINDOW_HEIGHT) - FISH_RADIUS));
         fish.setPosition(fishPosition);
+    }
+
+    void handleMouseClick(int x, int y) {
+        if (!isPlaying && playButton.getGlobalBounds().contains(x, y)) { // Start the game if the play button is clicked
+            isPlaying = true;
+        }
     }
 
     void update() {
@@ -279,6 +317,14 @@ private:
         window.display();
     }
 
+    void renderPlayButton() {
+        window.clear();
+        window.draw(background);
+        window.draw(playButton);
+        window.draw(playButtonText);
+        window.display();
+    }
+
     sf::RenderWindow window;
     sf::Texture backgroundTexture;
     sf::Texture fishTexture;
@@ -293,6 +339,9 @@ private:
     int score;
     sf::Font font;
     sf::Text scoreText;
+    sf::RectangleShape playButton;
+    sf::Text playButtonText;
+    bool isPlaying;
 };
 
 int main() {
