@@ -11,7 +11,7 @@ const float FISH_SPEED = 2.5f;
 const float BUBBLE_RADIUS = 15.0f;
 const float BUBBLE_SPEED = 0.2f; // Reduced bubble speed
 const float FOOD_RADIUS = 10.0f;
-const int MAX_FOOD_COUNT = 7; // Maximum number of food bubbles on the screen
+const int MAX_FOOD_COUNT = 10; // Maximum number of food bubbles on the screen
 
 class Bubble {
 public:
@@ -154,6 +154,20 @@ private:
         }
 
         sf::Vector2f movement(0.0f, 0.0f);
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+            movement.x -= FISH_SPEED;
+            fish.setScale(1.0f, 1.0f); // Reset the scale when moving left
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+            movement.x += FISH_SPEED;
+            fish.setScale(-1.0f, 1.0f); // Flip the sprite vertically when moving right
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+            movement.y -= FISH_SPEED;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+            movement.y += FISH_SPEED;
+
         fish.move(movement);
 
         sf::Vector2f fishPosition = fish.getPosition();
