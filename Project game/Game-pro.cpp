@@ -3,6 +3,8 @@
 #include <random>
 #include <iostream>
 #include <sstream>
+#include <SFML/Audio.hpp>
+
 
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
@@ -13,13 +15,16 @@ const float BUBBLE_SPEED = 5.0f; // Reduced bubble speed
 const float FOOD_RADIUS = 10.0f;
 const int MAX_FOOD_COUNT = 10; // Maximum number of food bubbles on the screen
 
+using namespace sf;
+using namespace std;
+
 class Bubble {
 public:
     Bubble(float posX, float posY, bool isDeadly)
         : velocity(0.0f, getRandomVelocity()), isDeadly(isDeadly)
     {
         shape.setRadius(BUBBLE_RADIUS);
-        shape.setFillColor(sf::Color::Blue);
+        shape.setFillColor(Color::Blue);
         shape.setPosition(posX, posY);
     }
 
@@ -31,19 +36,19 @@ public:
         return shape.getPosition().y > WINDOW_HEIGHT;
     }
 
-    const sf::FloatRect getBounds() const {
+    const FloatRect getBounds() const {
         return shape.getGlobalBounds();
     }
 
-    sf::CircleShape shape;
-    sf::Vector2f velocity;
+    CircleShape shape;
+    Vector2f velocity;
     bool isDeadly;
 
 private:
     float getRandomVelocity() const {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.5f);
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_real_distribution<float> randomVelocity(0.1f, 0.5f);
         return randomVelocity(gen);
     }
 };
@@ -54,7 +59,7 @@ public:
         : velocity(0.0f, getRandomVelocity()), isEdible(true)
     {
         shape.setRadius(FOOD_RADIUS);
-        shape.setFillColor(sf::Color::Green);
+        shape.setFillColor(Color::Green);
         shape.setPosition(posX, posY);
     }
 
@@ -66,19 +71,19 @@ public:
         return shape.getPosition().y > WINDOW_HEIGHT;
     }
 
-    const sf::FloatRect getBounds() const {
+    const FloatRect getBounds() const {
         return shape.getGlobalBounds();
     }
 
-    sf::CircleShape shape;
-    sf::Vector2f velocity;
+    CircleShape shape;
+    Vector2f velocity;
     bool isEdible;
 
 private:
     float getRandomVelocity() const {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> randomVelocity(0.1f, 0.4f);
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_real_distribution<float> randomVelocity(0.1f, 0.4f);
         return randomVelocity(gen);
     }
 };
@@ -86,14 +91,14 @@ private:
 class Game {
 public:
     Game()
-        : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Bubble Dodge Game"),
+        : window(VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Bubble Dodge Game"),
         fishTexture(), bubbleClock(), score(0), isPlaying(false)
     {
         initializeTextures();
         initializeSprites();
         initializeRandomGenerators();
         initializeScoreText();
-        initializePlayButton();
+        initializePlayButton();       
     }
 
     void run() {
@@ -110,15 +115,16 @@ public:
     }
 
 private:
+    Music backgroundMusic;
     void initializeTextures() {
         if (!backgroundTexture.loadFromFile("background.jpeg")) {
-            std::cout << "Failed to load background texture!" << std::endl;
-            std::exit(EXIT_FAILURE);
+            cout << "Failed to load background texture!" << endl;
+            exit(EXIT_FAILURE);
         }
 
         if (!fishTexture.loadFromFile("fish.png")) {
-            std::cout << "Failed to load fish texture!" << std::endl;
-            std::exit(EXIT_FAILURE);
+            cout << "Failed to load fish texture!" << endl;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -132,79 +138,87 @@ private:
         fish.setTexture(fishTexture);
         fish.setOrigin(FISH_RADIUS, FISH_RADIUS);
         fish.setPosition(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+        if (!backgroundMusic.openFromFile("bgsound.ogg")) {
+            // Handle error: Failed to load the audio file
+            cout << "Failed to load the audio file." << endl;
+        }
+
     }
 
     void initializeRandomGenerators() {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        randomX = std::uniform_real_distribution<float>(0, WINDOW_WIDTH);
+        random_device rd;
+        mt19937 gen(rd());
+        randomX = uniform_real_distribution<float>(0, WINDOW_WIDTH);
     }
 
     void initializeScoreText() {
         if (!font.loadFromFile("arial.ttf")) {
-            std::cout << "Failed to load font!" << std::endl;
-            std::exit(EXIT_FAILURE);
+            cout << "Failed to load font!" << endl;
+            exit(EXIT_FAILURE);
         }
 
         scoreText.setFont(font);
         scoreText.setCharacterSize(24);
-        scoreText.setFillColor(sf::Color::White);
+        scoreText.setFillColor(Color::White);
         scoreText.setPosition(10, 10);
     }
 
     void initializePlayButton() {
-        playButton.setSize(sf::Vector2f(200, 50));
+        playButton.setSize(Vector2f(200, 50));
         playButton.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 50); // Adjust vertical position
 
-        playButton.setFillColor(sf::Color::Green);
+        playButton.setFillColor(Color::Green);
 
         playButtonText.setFont(font);
         playButtonText.setCharacterSize(32); // Increase the font size to 32
-        playButtonText.setFillColor(sf::Color::White);
+        playButtonText.setFillColor(Color::White);
         playButtonText.setString("Play");
         playButtonText.setPosition(
             playButton.getPosition().x + (playButton.getSize().x - playButtonText.getLocalBounds().width) / 2,
             playButton.getPosition().y + (playButton.getSize().y - playButtonText.getLocalBounds().height) / 2 - 5
         );
 
-        playButtonText.setStyle(sf::Text::Bold);
+        playButtonText.setStyle(Text::Bold);
     }
 
 
 
     void processEvents() {
-        sf::Event event;
+        Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
+            if (event.type == Event::Closed) {
                 window.close();
             }
-            else if (event.type == sf::Event::MouseButtonPressed) {
-                if (event.mouseButton.button == sf::Mouse::Left) {
+            else if (event.type == Event::MouseButtonPressed) {
+                if (event.mouseButton.button == Mouse::Left) {
                     handleMouseClick(event.mouseButton.x, event.mouseButton.y);
                 }
             }
         }
 
-        sf::Vector2f movement(0.0f, 0.0f);
+        Vector2f movement(0.0f, 0.0f);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+        if (Keyboard::isKeyPressed(Keyboard::Left)) {
             movement.x -= FISH_SPEED;
             fish.setScale(1.0f, 1.0f); // Reset the scale when moving left
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+        if (Keyboard::isKeyPressed(Keyboard::Right)) {
             movement.x += FISH_SPEED;
             fish.setScale(-1.0f, 1.0f); // Flip the sprite vertically when moving right
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+        if (Keyboard::isKeyPressed(Keyboard::Up))
             movement.y -= FISH_SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+        if (Keyboard::isKeyPressed(Keyboard::Down))
             movement.y += FISH_SPEED;
+        if (Keyboard::isKeyPressed(Keyboard::Escape))
+            window.close();
 
         fish.move(movement);
 
-        sf::Vector2f fishPosition = fish.getPosition();
-        fishPosition.x = std::max(FISH_RADIUS, std::min(fishPosition.x, static_cast<float>(WINDOW_WIDTH) - FISH_RADIUS));
-        fishPosition.y = std::max(FISH_RADIUS, std::min(fishPosition.y, static_cast<float>(WINDOW_HEIGHT) - FISH_RADIUS));
+        Vector2f fishPosition = fish.getPosition();
+        fishPosition.x = max(FISH_RADIUS, min(fishPosition.x, static_cast<float>(WINDOW_WIDTH) - FISH_RADIUS));
+        fishPosition.y = max(FISH_RADIUS, min(fishPosition.y, static_cast<float>(WINDOW_HEIGHT) - FISH_RADIUS));
         fish.setPosition(fishPosition);
     }
 
@@ -225,6 +239,8 @@ private:
 
         if (isGameOver())
             endGame();
+
+        backgroundMusic.play();
     }
 
     void generateBubbles() {
@@ -280,7 +296,7 @@ private:
                     break;
                 }
                 score += 10;
-                scoreText.setString("Score: " + std::to_string(score));
+                scoreText.setString("Score: " + to_string(score));
             }
         }
     }
@@ -296,7 +312,7 @@ private:
 
     void endGame() {
         window.close();
-        std::cout << "Game Over! Score: " << score << std::endl;
+        cout << "Game Over! Score: " << score << endl;
     }
 
     void render() {
@@ -315,6 +331,14 @@ private:
         window.draw(scoreText); // Render the score text
 
         window.display();
+
+        backgroundMusic.play();
+
+        // Set the volume to 50%
+        backgroundMusic.setVolume(50.f);
+
+        // Loop the music
+        backgroundMusic.setLoop(true);
     }
 
     void renderPlayButton() {
@@ -325,22 +349,22 @@ private:
         window.display();
     }
 
-    sf::RenderWindow window;
-    sf::Texture backgroundTexture;
-    sf::Texture fishTexture;
-    sf::Sprite background;
-    sf::Sprite fish;
-    std::vector<Bubble> bubbles;
-    std::vector<Food> foodBubbles;
-    std::random_device rd;
-    std::mt19937 gen;
-    std::uniform_real_distribution<float> randomX;
-    sf::Clock bubbleClock;
+    RenderWindow window;
+    Texture backgroundTexture;
+    Texture fishTexture;
+    Sprite background;
+    Sprite fish;
+    vector<Bubble> bubbles;
+    vector<Food> foodBubbles;
+    random_device rd;
+    mt19937 gen;
+    uniform_real_distribution<float> randomX;
+    Clock bubbleClock;
     int score;
-    sf::Font font;
-    sf::Text scoreText;
-    sf::RectangleShape playButton;
-    sf::Text playButtonText;
+    Font font;
+    Text scoreText;
+    RectangleShape playButton;
+    Text playButtonText;
     bool isPlaying;
 };
 
